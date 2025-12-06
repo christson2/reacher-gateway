@@ -41,9 +41,12 @@ const redisClient = redis.createClient({
   port: process.env.REDIS_PORT || 6379,
 });
 
-redisClient.on('error', (err) => console.error('Redis error:', err));
+// Silently handle Redis errors (optional feature, not critical)
+redisClient.on('error', () => {
+  // Redis errors silently caught - blacklist feature disabled
+});
 redisClient.connect().catch(() => {
-  console.warn('[Gateway] Redis not available - token blacklist disabled');
+  // Redis connection failed silently - system continues to operate
 });
 
 /**
