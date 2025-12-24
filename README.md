@@ -85,3 +85,42 @@ npm test
 ## Deployment
 
 See root `README.md` for deployment instructions.
+
+## Environment / Deployment Configuration
+
+The gateway resolves upstream service URLs from environment variables (for example `AUTH_SERVICE_URL`). Use environment-appropriate values — do not hard-code `127.0.0.1` for cloud deployments.
+
+Recommended values per environment:
+
+- Local development (gateway and auth running on same host):
+    - `AUTH_SERVICE_URL=http://127.0.0.1:5001`
+
+- Docker Compose (services on the same Docker network, use service name):
+    - `AUTH_SERVICE_URL=http://auth-service:5001`
+    - Example (in `docker-compose.yml` for gateway service):
+        ```yaml
+        environment:
+            - AUTH_SERVICE_URL=http://auth-service:5001
+        ```
+
+- Kubernetes (use service DNS):
+    - `AUTH_SERVICE_URL=http://auth-service:5001`
+    - In k8s manifests set the env var in the `Deployment` and ensure a `Service` named `auth-service` exists in the same namespace.
+
+- Cloud / Production (internal load balancer or private hostname):
+    - `AUTH_SERVICE_URL=https://auth.internal.yourdomain.com`
+    - Configure this value in your platform's environment variable settings (ECS task definition, App Service settings, Kubernetes ConfigMap/Secret, etc.).
+
+Why this matters
+- `127.0.0.1` refers to the local loopback inside the process' network namespace. In containers or VMs, `127.0.0.1` is the container/VM itself and will not reach other services.
+- Use service names (Docker Compose) or cluster DNS (Kubernetes) or internal hostnames (cloud) so the gateway can route reliably in each environment.
+
+Best practices
+- Keep environment variables out of source control; store them in `.env` (local) and in your CI/CD / hosting platform for production.
+- Use TLS (HTTPS) between services in production.
+- Add timeouts, retries and circuit-breakers for upstream calls.
+- Use readiness/liveness probes (k8s) or health checks so the gateway only routes to healthy upstream instances.
+
+Local dev convenience
+- While developing, you can point the gateway to a local auth process (`http://127.0.0.1:5001`) or to a Docker Compose service (`http://auth-service:5001`) depending on how you run the stack.
+
